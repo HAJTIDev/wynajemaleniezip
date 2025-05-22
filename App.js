@@ -26,6 +26,8 @@ function App() {
   const [color, setColor] = useState('');
   const [year, setYear] = useState([2000, 2024]);
   const [price, setPrice] = useState([0, 500]);
+  const [selectedCarId, setSelectedCarId] = useState('');
+  const [formError, setFormError] = useState('');
 
   const filteredCars = cars.filter(
     (car) =>
@@ -36,7 +38,42 @@ function App() {
       car.price <= price[1]
   );
 
-  const [selectedCarId, setSelectedCarId] = useState('');
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setFormError('');
+
+    const form = e.target;
+    const pesel = form.pesel.value;
+    const dateFrom = form.od.value;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const peselChecksum = (pesel) => {
+      const weights = [1, 3, 7, 9, 1, 3, 7, 9, 1, 3];
+      let sum = 0;
+      for (let i = 0; i < 10; i++) {
+        sum += parseInt(pesel[i], 10) * weights[i];
+      }
+      return (10 - (sum % 10)) % 10;
+    };
+    const peselChecksumValue = peselChecksum(pesel);
+    if (peselChecksumValue !== parseInt(pesel[10], 10)) {
+      setFormError('PESEL jest niepoprawny.');
+      return;
+    }
+    if (!dateFrom) {
+      setFormError('Proszę wybrać datę rozpoczęcia wynajmu.');
+      return;
+    }
+    const from = new Date(dateFrom);
+    from.setHours(0, 0, 0, 0);
+    if (from <= today) {
+      setFormError('Data rozpoczęcia wynajmu musi być późniejsza niż dzisiaj.');
+      return;
+    }
+    alert('Formularz wysłany poprawnie!');
+    form.reset();
+    setSelectedCarId('');
+  };
 
   return (
     <div className="App">
@@ -97,7 +134,7 @@ function App() {
           </div>
         ))}
       </div>
-      <form className="App-rental-form" style={{ marginTop: 32 }}>
+      <form className="App-rental-form" style={{ marginTop: 32 }} onSubmit={handleSubmit}>
         <h2>Formularz wynajmu</h2>
         <div>
           <label>
@@ -147,6 +184,7 @@ function App() {
             <input type="text" name="pesel" pattern="\d{11}" maxLength={11} required />
           </label>
         </div>
+        {formError && <div style={{ color: 'red', marginBottom: 12 }}>{formError}</div>}
         <button type="submit">Wynajmij</button>
       </form>
     </div>
