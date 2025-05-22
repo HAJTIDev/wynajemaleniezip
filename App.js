@@ -1,3 +1,4 @@
+import "bootstrap/dist/css/bootstrap.min.css";
 import './App.css';
 import { useState } from 'react';
 import bmwBiale from './images/bmw-biale.png';
@@ -45,8 +46,10 @@ function App() {
     const form = e.target;
     const pesel = form.pesel.value;
     const dateFrom = form.od.value;
+    const dateTo = form.do.value;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+
     const peselChecksum = (pesel) => {
       const weights = [1, 3, 7, 9, 1, 3, 7, 9, 1, 3];
       let sum = 0;
@@ -64,85 +67,132 @@ function App() {
       setFormError('Proszę wybrać datę rozpoczęcia wynajmu.');
       return;
     }
+    if (!dateTo) {
+      setFormError('Proszę wybrać datę zakończenia wynajmu.');
+      return;
+    }
     const from = new Date(dateFrom);
+    const to = new Date(dateTo);
     from.setHours(0, 0, 0, 0);
+    to.setHours(0, 0, 0, 0);
+
     if (from <= today) {
       setFormError('Data rozpoczęcia wynajmu musi być późniejsza niż dzisiaj.');
       return;
     }
-    alert('Formularz wysłany poprawnie!');
+    if (to < from) {
+      setFormError('Data zakończenia wynajmu musi być późniejsza niż data rozpoczęcia.');
+      return;
+    }
+
+    // Pobierz wybrane auto
+    const selectedCar = cars.find(car => car.id === parseInt(form.car.value, 10));
+    if (!selectedCar) {
+      setFormError('Proszę wybrać auto.');
+      return;
+    }
+    // Oblicz liczbę dni (włącznie z dniem początkowym)
+    const timeDiff = to - from;
+    const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24)) + 1;
+    const pricePerDay = selectedCar.price;
+    const totalPrice = days * pricePerDay;
+
+    alert(`Wynajem na ${days} dni. Cena za każdy dzień: ${pricePerDay} zł. Łącznie do zapłaty: ${totalPrice} zł.`);
+
     form.reset();
     setSelectedCarId('');
   };
 
   return (
-    <div className="App">
-      <header className="App-banner">Wypożyczalnia Samochodów</header>
-      <div className="App-filters">
-        <label>
-          Kolor:
-          <select value={color} onChange={(e) => setColor(e.target.value)}>
-            <option value="">Wszystkie</option>
-            <option value="Biały">Biały</option>
-            <option value="Czarny">Czarny</option>
-            <option value="Czerwony">Czerwony</option>
-            <option value="Srebrny">Srebrny</option>
-          </select>
-        </label>
-        <label>
-          Rok:
-          <input
-            type="range"
-            min="2000"
-            max="2024"
-            value={year[0]}
-            onChange={(e) => setYear([+e.target.value, year[1]])}
-          />
-          <input
-            type="range"
-            min="2000"
-            max="2024"
-            value={year[1]}
-            onChange={(e) => setYear([year[0], +e.target.value])}
-          />
-          <span>
-            {year[0]} - {year[1]}
-          </span>
-        </label>
-        <label>
-          Cena:
-          <input
-            type="number"
-            value={price[0]}
-            onChange={(e) => setPrice([+e.target.value, price[1]])}
-          />
-          <input
-            type="number"
-            value={price[1]}
-            onChange={(e) => setPrice([price[0], +e.target.value])}
-          />
-          <span>
-            {price[0]} - {price[1]} PLN
-          </span>
-        </label>
+    <div className="container py-4">
+      <header className="mb-4">
+        <h1 className="text-center bg-primary text-white p-3 rounded">Wypożyczalnia Samochodów</h1>
+      </header>
+      <div className="row mb-4">
+        <div className="col-md-4 mb-2">
+          <label className="form-label">
+            Kolor:
+            <select className="form-select" value={color} onChange={(e) => setColor(e.target.value)}>
+              <option value="">Wszystkie</option>
+              <option value="Biały">Biały</option>
+              <option value="Czarny">Czarny</option>
+              <option value="Czerwony">Czerwony</option>
+              <option value="Srebrny">Srebrny</option>
+            </select>
+          </label>
+        </div>
+        <div className="col-md-4 mb-2">
+          <label className="form-label w-100">
+            Rok:
+            <div className="d-flex align-items-center">
+              <input
+                type="range"
+                min="2000"
+                max="2024"
+                value={year[0]}
+                onChange={(e) => setYear([+e.target.value, year[1]])}
+                className="form-range me-2"
+                style={{ width: "50%" }}
+              />
+              <input
+                type="range"
+                min="2000"
+                max="2024"
+                value={year[1]}
+                onChange={(e) => setYear([year[0], +e.target.value])}
+                className="form-range me-2"
+                style={{ width: "50%" }}
+              />
+              <span className="ms-2">{year[0]} - {year[1]}</span>
+            </div>
+          </label>
+        </div>
+        <div className="col-md-4 mb-2">
+          <label className="form-label w-100">
+            Cena:
+            <div className="d-flex align-items-center">
+              <input
+                type="number"
+                value={price[0]}
+                onChange={(e) => setPrice([+e.target.value, price[1]])}
+                className="form-control me-2"
+                style={{ width: "40%" }}
+              />
+              <input
+                type="number"
+                value={price[1]}
+                onChange={(e) => setPrice([price[0], +e.target.value])}
+                className="form-control me-2"
+                style={{ width: "40%" }}
+              />
+              <span className="ms-2">{price[0]} - {price[1]} PLN</span>
+            </div>
+          </label>
+        </div>
       </div>
-      <div className="App-gallery">
+      <div className="row g-3 mb-4">
         {filteredCars.map((car) => (
-          <div key={car.id} className="App-gallery-item">
-            <img src={car.src} alt={car.alt} />
-            <div className="App-gallery-name">{car.alt}</div>
+          <div key={car.id} className="col-6 col-md-4 col-lg-3">
+            <div className="card h-100 text-center">
+              <img src={car.src} alt={car.alt} className="card-img-top" style={{ maxHeight: 120, objectFit: "contain" }} />
+              <div className="card-body">
+                <div className="card-title">{car.alt}</div>
+                <div className="text-muted">{car.year} | {car.color} | {car.price} PLN</div>
+              </div>
+            </div>
           </div>
         ))}
       </div>
-      <form className="App-rental-form" style={{ marginTop: 32 }} onSubmit={handleSubmit}>
-        <h2>Formularz wynajmu</h2>
-        <div>
-          <label>
+      <form className="card p-4 mx-auto" style={{ maxWidth: 480 }} onSubmit={handleSubmit}>
+        <h2 className="mb-4">Formularz wynajmu</h2>
+        <div className="mb-3">
+          <label className="form-label">
             Wybierz auto:
             <select
               name="car"
               value={selectedCarId}
               onChange={(e) => setSelectedCarId(e.target.value)}
+              className="form-select"
               required
             >
               <option value="">-- Wybierz auto --</option>
@@ -154,38 +204,38 @@ function App() {
             </select>
           </label>
         </div>
-        <div>
-          <label>
+        <div className="mb-3">
+          <label className="form-label">
             Imię:
-            <input type="text" name="imie" required />
+            <input type="text" name="imie" className="form-control" required />
           </label>
         </div>
-        <div>
-          <label>
+        <div className="mb-3">
+          <label className="form-label">
             Nazwisko:
-            <input type="text" name="nazwisko" required />
+            <input type="text" name="nazwisko" className="form-control" required />
           </label>
         </div>
-        <div>
-          <label>
+        <div className="mb-3">
+          <label className="form-label">
             Od:
-            <input type="date" name="od" required />
+            <input type="date" name="od" className="form-control" required />
           </label>
         </div>
-        <div>
-          <label>
+        <div className="mb-3">
+          <label className="form-label">
             Do:
-            <input type="date" name="do" required />
+            <input type="date" name="do" className="form-control" required />
           </label>
         </div>
-        <div>
-          <label>
+        <div className="mb-3">
+          <label className="form-label">
             PESEL:
-            <input type="text" name="pesel" pattern="\d{11}" maxLength={11} required />
+            <input type="text" name="pesel" pattern="\d{11}" maxLength={11} className="form-control" required />
           </label>
         </div>
-        {formError && <div style={{ color: 'red', marginBottom: 12 }}>{formError}</div>}
-        <button type="submit">Wynajmij</button>
+        {formError && <div className="alert alert-danger mb-3">{formError}</div>}
+        <button type="submit" className="btn btn-primary w-100">Wynajmij</button>
       </form>
     </div>
   );
